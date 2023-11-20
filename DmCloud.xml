@@ -1,0 +1,8 @@
+<uwsgi>
+    <socket>127.0.0.1:8010</socket><!-- 内部端口，自定义 -->
+    <chdir>/public/Users/siteusr/website/DmCloud</chdir><!-- 项目路径 -->
+    <module>DmCloud.wsgi</module>
+    <processes>4</processes> <!-- 进程数 -->
+    <daemonize>/public/Users/siteusr/website/DmCloud/log/uwsgi.log</daemonize><!-- 日志文件 -->
+    <virtualenv>/public/Users/kongjind/anaconda/envs/dj3.1</virtualenv>
+</uwsgi>
