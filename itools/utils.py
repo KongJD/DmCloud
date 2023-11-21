@@ -3,7 +3,8 @@ import os
 import time
 import random
 
-all_path = "/public/Users/kongjind/pipeline/geneidentitytools/random"
+from DmCloud.settings import random_path
+
 
 
 class Utils:
@@ -26,5 +27,5 @@ class RandomNumber:
         shift_time = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(now / 1000))
         rand = random.randint(1, 1000000)
         dir = "-".join([shift_time, str(rand)])
-        dir_path = os.path.join(all_path, dir)
+        dir_path = os.path.join(random_path, dir)
         return dir_path, dir

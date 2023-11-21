@@ -182,3 +182,5 @@ ELASTICSEARCH_DSL = {
         'hosts': '127.0.0.1:9200'
     },
 }
+
+random_path = "/public/Users/kongjind/pipeline/geneidentitytools/random"
