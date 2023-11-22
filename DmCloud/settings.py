@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django_elasticsearch_dsl",
     "django_elasticsearch_dsl_drf",
     "django_celery_results",
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -137,6 +138,7 @@ DATABASE_APPS_MAPPING = {
     "sessions": "default",
     "django_celery_results": "default",
     "itools": "default",
+    "notifications": "default",
 }
 
 DATABASE_ROUTERS = ['DmCloud.database_router.DatabaseAppsRouter']
