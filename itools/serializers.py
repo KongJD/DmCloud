@@ -27,6 +27,7 @@ class JobCelerySerializer(serializers.ModelSerializer):
         model = JobCeleryModel
         fields = "__all__"
 
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)

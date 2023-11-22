@@ -21,6 +21,7 @@ from itools.serializers import JobTaskSerializer, JobRpobSerializer, JobCelerySe
 from itools.utils import Utils, makedir, RandomNumber
 from itools.tasks import *
 import pandas as pd
+import numpy as np
 from notifications.signals import notify
 
 perl_16s = "/public/Users/sunll/Web/MarkerDB/Script/16S_pipeline.pl"
@@ -234,7 +235,30 @@ class GenerprocessResultView(GenericAPIView):
         gener_dir = "2023-11-22-06-21-38-757516"
         out_path = os.path.join(random_path, gener_dir, 'out')
         pa_path = os.path.join(out_path, os.listdir(out_path)[0])
+        all = []
+        taxonomy_df = pd.read_csv(os.path.join(pa_path, "Taxonomy.txt"), sep="\t").columns
+        all.append({"Species name": taxonomy_df[0], "Staphylococcus aureus": taxonomy_df[1]})
+        anicaluate_all_df = pd.read_csv(os.path.join(pa_path, "ANIcalculator.all.txt"), sep="\t").to_dict()
+        all.append({k: v.values() for k, v in anicaluate_all_df.items()})
+        gene_stats_df = pd.read_csv(os.path.join(pa_path, "Genes_Stats.xls"), header=None, sep="\t")
+        all.append(gene_stats_df.set_index(0)[1].to_dict())
+        mlst_type_df = pd.read_csv(os.path.join(pa_path, "MLST.STtype.txt"), sep="\t").to_dict()
+        all.append({k: v[0] for k, v in mlst_type_df.items()})
+        mlst_align_df = pd.read_csv(os.path.join(pa_path, "MLST.align.result.xls"), sep="\t").to_dict()
+        all.append({k: v.values() for k, v in mlst_align_df.items()})
+        apoutput_df = pd.read_csv(os.path.join(pa_path, "AR_VF", "ARoutput.result.txt"), sep="\t")
+        for col in apoutput_df.columns:
+            apoutput_df[col] = np.where(apoutput_df[col].notnull(), apoutput_df[col], "")
+        all.append({k: v.values() for k, v in apoutput_df.to_dict().items()})
 
+        for p in os.listdir(os.path.join(pa_path, "AR_VF")):
+            if p.endswith("VFDB.filter.txt"):
+                vfdb_filter_df = pd.read_csv(os.path.join(pa_path, "AR_VF", p), sep="\t")
+                for col in vfdb_filter_df.columns:
+                    vfdb_filter_df[col] = np.where(vfdb_filter_df[col].notnull(), vfdb_filter_df[col], "")
+                all.append({k: v.values() for k, v in vfdb_filter_df.to_dict().items()})
+        all.append({"Download": f"{pa_path}"})
+        return Response(all, status=status.HTTP_200_OK)
 
 
 class TaskTest(GenericAPIView):
