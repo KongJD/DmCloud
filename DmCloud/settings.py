@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 import datetime
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -65,7 +66,7 @@ ROOT_URLCONF = 'DmCloud.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'template')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -186,3 +187,7 @@ ELASTICSEARCH_DSL = {
 }
 
 random_path = "/public/Users/kongjind/pipeline/geneidentitytools/random"
+perl_16s = "/public/Users/sunll/Web/MarkerDB/Script/16S_pipeline.pl"
+perl_rpob = "/public/Users/sunll/Web/MarkerDB/Script/rpoB_pipeline.pl"
+perl_online = "/public/Users/liangq/pipeline/fBac_bin/0.Online/Online.pl"
+save_fasta_path = "/public/Users/kongjind/pipeline/geneidentitytools/fasta_path"

@@ -4,8 +4,10 @@ import os
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.db import transaction
+from django.shortcuts import render
 from notifications.models import Notification
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
@@ -15,17 +17,15 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from DmCloud.settings import random_path
+from DmCloud.settings import random_path, perl_16s, perl_rpob
 from itools.models import JobTaskModel
-from itools.serializers import JobTaskSerializer, JobRpobSerializer, JobCelerySerializer, MyTokenObtainPairSerializer
+from itools.serializers import JobTaskSerializer, JobRpobSerializer, JobCelerySerializer, MyTokenObtainPairSerializer, \
+    NoTificationsSerializer
 from itools.utils import Utils, makedir, RandomNumber
 from itools.tasks import *
 import pandas as pd
 import numpy as np
 from notifications.signals import notify
-
-perl_16s = "/public/Users/sunll/Web/MarkerDB/Script/16S_pipeline.pl"
-perl_rpob = "/public/Users/sunll/Web/MarkerDB/Script/rpoB_pipeline.pl"
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -42,6 +42,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 
 class Tools16SView(GenericAPIView):
+
     def post(self, request):
         type = request.data.get("filetype")
         path = request.data.get("fasta_path")
@@ -111,7 +112,6 @@ class Tools16sRpobResultView(GenericAPIView):
 
     def get(self, request):
         all = []
-        # gener_dir = "2023-11-21-01-00-43-474704"
         gener_dir = request.query_params.get("job_id")
         download_path = os.path.join(random_path, gener_dir, 'out', "Download")
         qc_res = Utils().read_qc_stats(os.path.join(download_path, 'QC.stat.xls'))
@@ -143,7 +143,7 @@ class ToolsRpobView(GenericAPIView):
         if seq:
             cmd = f"perl {perl_rpob} -seq {seq} -outdir {os.path.join(dir_path, 'out')} " \
                   f"-temp {os.path.join(dir_path, 'temp')} -filetype {type}"
-            res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            subprocess.run(cmd, shell=True, capture_output=True, text=True)
             ser_data = JobRpobSerializer(data={
                 "job_id": dir,
                 "fasta_path": "",
@@ -194,9 +194,8 @@ class ToolsGeneProcessView(GenericAPIView):
     authentication_classes = [JWTAuthentication]
 
     @transaction.atomic
-    def get(self, request):
-        # path = "/public/Users/kongjind/pipeline/geneidentitytools/identify_genome/example.fasta"
-        path = request.query_params.get("fasta_path")
+    def post(self, request):
+        path = request.data.get("fasta_path")
         dir_path, dir = RandomNumber().generate_path()
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
@@ -232,7 +231,7 @@ class ToolsGeneProcessView(GenericAPIView):
 class GenerprocessResultView(GenericAPIView):
 
     def get(self, request):
-        gener_dir = "2023-11-22-06-21-38-757516"
+        gener_dir = request.query_params.get("job_id")
         out_path = os.path.join(random_path, gener_dir, 'out')
         pa_path = os.path.join(out_path, os.listdir(out_path)[0])
         all = []
@@ -261,15 +260,100 @@ class GenerprocessResultView(GenericAPIView):
         return Response(all, status=status.HTTP_200_OK)
 
 
-class TaskTest(GenericAPIView):
+class ItoolsItsView(GenericAPIView):
+
+    def post(self, request):
+        path = request.data.get("fasta_path")
+        seq = request.data.get("seq")
+
+        dir_path, dir = RandomNumber().generate_path()
+        makedir(dir_path)
+        makedir(os.path.join(dir_path, "out"))
+        makedir(os.path.join(dir_path, "temp"))
+
+        if seq:
+            cmd = f"perl {perl_16s} -seq {seq} -outdir {os.path.join(dir_path, 'out')} " \
+                  f"-temp {os.path.join(dir_path, 'temp')} -filetype gene -dbtype ITS"
+            subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            ser_data = JobTaskSerializer(data={
+                "job_id": dir,
+                "fasta_path": "",
+                "tags": "ITS",
+                "filetype": "gene",
+                "dbtype": 'ITS',
+                "seq": seq
+            })
+            if ser_data.is_valid():
+                ser_data.save()
+                return Response(ser_data.data, status=status.HTTP_200_OK)
+            return Response(ser_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        cmd = f"perl {perl_16s} -input {path} -outdir {os.path.join(dir_path, 'out')} " \
+              f"-temp {os.path.join(dir_path, 'temp')} -filetype gene -dbtype ITS"
+        res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        ser_data = JobTaskSerializer(data={
+            "job_id": dir,
+            "fasta_path": path,
+            "tags": "ITS",
+            "filetype": "gene",
+            "dbtype": 'ITS',
+            "seq": ""
+        })
+        if ser_data.is_valid():
+            ser_data.save()
+            return Response(ser_data.data, status=status.HTTP_200_OK)
+        return Response(ser_data.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UploadView(GenericAPIView):
+    def post(self, request):
+        file = request.FILES.get('file')
+        dir_path, dir = RandomNumber().save_fasta_path()
+        makedir(dir_path)
+        with open(os.path.join(dir_path, file.name), "wb+") as f:
+            for chunk in file.chunks():
+                f.write(chunk)
+        return Response({"fasta_path": f"{os.path.join(dir_path, file.name)}"}, status=status.HTTP_200_OK)
+
+# class TaskTest(GenericAPIView):
+#
+#     def get(self, request):
+#         superusers = User.objects.filter(is_superuser=True)
+#         all = []
+#         for user in superusers:
+#             unread_notifications = Notification.objects.unread().filter(recipient=user)
+#             if unread_notifications.exists():
+#                 all.append(f"User {user.username} has unread notifications.")
+#             else:
+#                 all.append(f"User {user.username} has no unread notifications.")
+#         return Response(all)
+
+
+def notice(request):
+    notifications = Notification.objects.unread()
+    return render(request, 'notification_unread.html', {'notifications': notifications})
+
+
+class UserGetUserNotificationView(GenericAPIView):
+    serializer_class = NoTificationsSerializer
 
     def get(self, request):
-        superusers = User.objects.filter(is_superuser=True)
         all = []
-        for user in superusers:
-            unread_notifications = Notification.objects.unread().filter(recipient=user)
-            if unread_notifications.exists():
-                all.append(f"User {user.username} has unread notifications.")
-            else:
-                all.append(f"User {user.username} has no unread notifications.")
-        return Response(all)
+        user = request.query_params.get('user')
+        user_unread = Notification.objects.all()
+        for m in user_unread:
+            if m.recipient.username == user:
+                all.append(m)
+        user_ser = self.get_serializer(all, many=True)
+        return Response(user_ser.data, status=status.HTTP_200_OK)
+
+
+class UnreadChangeView(GenericAPIView):
+    serializer_class = NoTificationsSerializer
+
+    def get(self, request):
+        id = request.query_params.get('id')
+        user_unread = Notification.objects.get(id=id).mark_as_read()
+        data = self.get_serializer(user_unread)
+
+        return Response(data.data, status=status.HTTP_200_OK)

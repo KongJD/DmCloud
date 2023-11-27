@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+from notifications.models import Notification
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -34,3 +36,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['username'] = self.user.username
         data['user_id'] = self.user.id
         return data
+
+
+class NoTificationsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Notification
+        fields = "__all__"
