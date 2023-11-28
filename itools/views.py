@@ -17,7 +17,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from DmCloud.settings import random_path, perl_16s, perl_rpob
+from DmCloud import settings
+from DmCloud.settings import random_path, perl_16s, perl_rpob, random_path_16s, random_path_rpob, random_path_genome, \
+    random_path_its
 from itools.models import JobTaskModel
 from itools.serializers import JobTaskSerializer, JobRpobSerializer, JobCelerySerializer, MyTokenObtainPairSerializer, \
     NoTificationsSerializer
@@ -49,7 +51,7 @@ class Tools16SView(GenericAPIView):
         dtype = request.data.get("dbtype")
         seq = request.data.get("seq")
 
-        dir_path, dir = RandomNumber().generate_path()
+        dir_path, dir = RandomNumber().generate_path(random_path_16s)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -96,7 +98,7 @@ class Tools16SView(GenericAPIView):
                 "job_id": dir,
                 "fasta_path": path,
                 "tags": "16S",
-                "filetype": "gene",
+                "filetype": "genome",
                 "dbtype": dtype,
                 "seq": ""
             })
@@ -113,16 +115,37 @@ class Tools16sRpobResultView(GenericAPIView):
     def get(self, request):
         all = []
         gener_dir = request.query_params.get("job_id")
-        download_path = os.path.join(random_path, gener_dir, 'out', "Download")
+        type = request.query_params.get("tags")
+        download_path = ""
+        if type == "16S":
+            download_path = os.path.join(random_path_16s, gener_dir, 'out', "Download")
+
+        elif type == "rpob":
+            download_path = os.path.join(random_path_rpob, gener_dir, 'out', "Download")
+
+        elif type == "ITS":
+            download_path = os.path.join(random_path_its, gener_dir, 'out', "Download")
+
         qc_res = Utils().read_qc_stats(os.path.join(download_path, 'QC.stat.xls'))
         all.append(qc_res)
-        all.append({"sequence_completeness": f"{os.path.join(download_path, 'gene1.completeness_coverage.svg')}"})
-        all.append({"sequence_align": f"{os.path.join(download_path, 'gene1.alignment.svg')}"})
+        all.append(
+            {"sequence_completeness": "".join(
+                [request.get_host(),
+                 os.path.join(settings.MEDIA_URL, type, gener_dir, 'out', "Download",
+                              "gene1.completeness_coverage.svg")])})
+        all.append(
+            {"sequence_align": "".join(
+                [request.get_host(),
+                 os.path.join(settings.MEDIA_URL, type, gener_dir, 'out', "Download",
+                              "gene1.alignment.svg")])})
         df = pd.read_csv(os.path.join(download_path, "gene1.best_predict.xls"), sep="\t").to_dict()
         species = [v for k, v in df["Species"].items()]
         similarity = [v for k, v in df["Similarity"].items()]
         all.append({"Species": species, "Similarity": similarity})
-        all.append({"Tree": f"{os.path.join(download_path, 'gene1.output.png')}"})
+        all.append({"Tree": "".join(
+            [request.get_host(),
+             os.path.join(settings.MEDIA_URL, type, gener_dir, 'out', "Download",
+                          "gene1.output.png")])})
         all.append({"Download": f"{download_path}"})
 
         return Response(all, status=status.HTTP_200_OK)
@@ -135,7 +158,7 @@ class ToolsRpobView(GenericAPIView):
         path = request.data.get("fasta_path")
         seq = request.data.get("seq")
 
-        dir_path, dir = RandomNumber().generate_path()
+        dir_path, dir = RandomNumber().generate_path(random_path_rpob)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -149,7 +172,7 @@ class ToolsRpobView(GenericAPIView):
                 "fasta_path": "",
                 "tags": "rpob",
                 "filetype": "gene",
-                "seq": seq,
+                "seq": seq
             })
             if ser_data.is_valid():
                 ser_data.save()
@@ -196,7 +219,7 @@ class ToolsGeneProcessView(GenericAPIView):
     @transaction.atomic
     def post(self, request):
         path = request.data.get("fasta_path")
-        dir_path, dir = RandomNumber().generate_path()
+        dir_path, dir = RandomNumber().generate_path(random_path_genome)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -232,7 +255,7 @@ class GenerprocessResultView(GenericAPIView):
 
     def get(self, request):
         gener_dir = request.query_params.get("job_id")
-        out_path = os.path.join(random_path, gener_dir, 'out')
+        out_path = os.path.join(random_path_genome, gener_dir, 'out')
         pa_path = os.path.join(out_path, os.listdir(out_path)[0])
         all = []
         taxonomy_df = pd.read_csv(os.path.join(pa_path, "Taxonomy.txt"), sep="\t").columns
@@ -266,7 +289,7 @@ class ItoolsItsView(GenericAPIView):
         path = request.data.get("fasta_path")
         seq = request.data.get("seq")
 
-        dir_path, dir = RandomNumber().generate_path()
+        dir_path, dir = RandomNumber().generate_path(random_path_its)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -290,7 +313,7 @@ class ItoolsItsView(GenericAPIView):
 
         cmd = f"perl {perl_16s} -input {path} -outdir {os.path.join(dir_path, 'out')} " \
               f"-temp {os.path.join(dir_path, 'temp')} -filetype gene -dbtype ITS"
-        res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        subprocess.run(cmd, shell=True, capture_output=True, text=True)
         ser_data = JobTaskSerializer(data={
             "job_id": dir,
             "fasta_path": path,
@@ -314,6 +337,7 @@ class UploadView(GenericAPIView):
             for chunk in file.chunks():
                 f.write(chunk)
         return Response({"fasta_path": f"{os.path.join(dir_path, file.name)}"}, status=status.HTTP_200_OK)
+
 
 # class TaskTest(GenericAPIView):
 #

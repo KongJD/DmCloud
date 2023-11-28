@@ -39,7 +39,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class NoTificationsSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Notification
         fields = "__all__"
+
+
+class Imgserializer(serializers.Serializer):
+    img = serializers.ImageField()

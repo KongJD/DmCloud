@@ -179,6 +179,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'collect_static')
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
 ELASTICSEARCH_DSL = {
     'default': {
@@ -186,8 +190,17 @@ ELASTICSEARCH_DSL = {
     },
 }
 
-random_path = "/public/Users/kongjind/pipeline/geneidentitytools/random"
+# random_path = "/public/Users/kongjind/pipeline/geneidentitytools/random"
+random_path = MEDIA_ROOT
+random_path_16s = os.path.join(random_path, "16S")
+random_path_rpob = os.path.join(random_path, "Rpob")
+random_path_its = os.path.join(random_path, "ITS")
+random_path_genome = os.path.join(random_path, "Genome")
+
+save_fasta_path = os.path.join(random_path, "fasta_path")
+
 perl_16s = "/public/Users/sunll/Web/MarkerDB/Script/16S_pipeline.pl"
 perl_rpob = "/public/Users/sunll/Web/MarkerDB/Script/rpoB_pipeline.pl"
 perl_online = "/public/Users/liangq/pipeline/fBac_bin/0.Online/Online.pl"
-save_fasta_path = "/public/Users/kongjind/pipeline/geneidentitytools/fasta_path"
+
+# save_fasta_path = "/public/Users/kongjind/pipeline/geneidentitytools/fasta_path"

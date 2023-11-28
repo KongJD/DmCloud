@@ -1,0 +1,1 @@
+nohup /public/Users/kongjind/anaconda/envs/dj3.1/bin/python -u /public/Users/kongjind/anaconda/envs/dj3.1/bin/celery -A DmCloud worker -l info >>/public/Users/siteusr/website/DmCloud/log/celery.log 2>>/public/Users/siteusr/website/DmCloud/log/celery.error &

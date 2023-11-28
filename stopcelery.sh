@@ -1,0 +1,1 @@
+ps -ef | grep celery | grep DmCloud | awk '{print $2}' | xargs kill -9

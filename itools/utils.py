@@ -23,12 +23,12 @@ def makedir(path):
 
 class RandomNumber:
 
-    def generate_path(self):
+    def generate_path(self, path):
         now = int(round(time.time() * 1000))
         shift_time = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(now / 1000))
         rand = random.randint(1, 1000000)
         dir = "-".join([shift_time, generate_random_letters(), str(rand)])
-        dir_path = os.path.join(random_path, dir)
+        dir_path = os.path.join(path, dir)
         return dir_path, dir
 
     def save_fasta_path(self):
