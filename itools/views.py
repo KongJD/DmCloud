@@ -1,4 +1,6 @@
 import subprocess
+import datetime
+
 from celery.result import AsyncResult
 import os
 
@@ -52,6 +54,11 @@ class Tools16SView(GenericAPIView):
         seq = request.data.get("seq")
 
         dir_path, dir = RandomNumber().generate_path(random_path_16s)
+
+        year = str(datetime.datetime.now().year)
+        month = str(datetime.datetime.now().month)
+        dir_path = os.path.join(random_path_16s, year, month, dir)
+
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -118,25 +125,31 @@ class Tools16sRpobResultView(GenericAPIView):
         type = request.query_params.get("tags")
         download_path = ""
         if type == "16S":
-            download_path = os.path.join(random_path_16s, gener_dir, 'out', "Download")
+            download_path = os.path.join(random_path_16s, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                                         gener_dir, 'out', "Download")
 
         elif type == "rpob":
-            download_path = os.path.join(random_path_rpob, gener_dir, 'out', "Download")
+            download_path = os.path.join(random_path_rpob, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                                         gener_dir, 'out', "Download")
+            type = "Rpob"
 
         elif type == "ITS":
-            download_path = os.path.join(random_path_its, gener_dir, 'out', "Download")
+            download_path = os.path.join(random_path_its, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                                         gener_dir, 'out', "Download")
 
         qc_res = Utils().read_qc_stats(os.path.join(download_path, 'QC.stat.xls'))
         all.append(qc_res)
         all.append(
             {"sequence_completeness": "".join(
                 [request.get_host(),
-                 os.path.join(settings.MEDIA_URL, type, gener_dir, 'out', "Download",
+                 os.path.join(settings.MEDIA_URL, type, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                              gener_dir, 'out', "Download",
                               "gene1.completeness_coverage.svg")])})
         all.append(
             {"sequence_align": "".join(
                 [request.get_host(),
-                 os.path.join(settings.MEDIA_URL, type, gener_dir, 'out', "Download",
+                 os.path.join(settings.MEDIA_URL, type, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                              gener_dir, 'out', "Download",
                               "gene1.alignment.svg")])})
         df = pd.read_csv(os.path.join(download_path, "gene1.best_predict.xls"), sep="\t").to_dict()
         species = [v for k, v in df["Species"].items()]
@@ -144,7 +157,8 @@ class Tools16sRpobResultView(GenericAPIView):
         all.append({"Species": species, "Similarity": similarity})
         all.append({"Tree": "".join(
             [request.get_host(),
-             os.path.join(settings.MEDIA_URL, type, gener_dir, 'out', "Download",
+             os.path.join(settings.MEDIA_URL, type, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                          gener_dir, 'out', "Download",
                           "gene1.output.png")])})
         all.append({"Download": f"{download_path}"})
 
@@ -152,13 +166,16 @@ class Tools16sRpobResultView(GenericAPIView):
 
 
 class ToolsRpobView(GenericAPIView):
+
     def post(self, request):
 
         type = request.data.get("filetype")
         path = request.data.get("fasta_path")
         seq = request.data.get("seq")
-
         dir_path, dir = RandomNumber().generate_path(random_path_rpob)
+        year = str(datetime.datetime.now().year)
+        month = str(datetime.datetime.now().month)
+        dir_path = os.path.join(random_path_rpob, year, month, dir)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -176,9 +193,9 @@ class ToolsRpobView(GenericAPIView):
             })
             if ser_data.is_valid():
                 ser_data.save()
-                return Response(ser_data.data, status=status.HTTP_200_OK)
+                print(ser_data.data)
+                return Response([ser_data.data], status=status.HTTP_200_OK)
             return Response(ser_data.errors, status=status.HTTP_400_BAD_REQUEST)
-
         if type == 'gene':
             cmd = f"perl {perl_rpob} -input {path} -outdir {os.path.join(dir_path, 'out')} " \
                   f"-temp {os.path.join(dir_path, 'temp')} -filetype {type}"
@@ -192,7 +209,7 @@ class ToolsRpobView(GenericAPIView):
             })
             if ser_data.is_valid():
                 ser_data.save()
-                return Response(ser_data.data, status=status.HTTP_200_OK)
+                return Response([ser_data.data], status=status.HTTP_200_OK)
             return Response(ser_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
         elif type == "genome":
@@ -208,7 +225,7 @@ class ToolsRpobView(GenericAPIView):
             })
             if ser_data.is_valid():
                 ser_data.save()
-                return Response(ser_data.data, status=status.HTTP_200_OK)
+                return Response([ser_data.data], status=status.HTTP_200_OK)
             return Response(ser_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -220,6 +237,9 @@ class ToolsGeneProcessView(GenericAPIView):
     def post(self, request):
         path = request.data.get("fasta_path")
         dir_path, dir = RandomNumber().generate_path(random_path_genome)
+        year = str(datetime.datetime.now().year)
+        month = str(datetime.datetime.now().month)
+        dir_path = os.path.join(random_path_genome, year, month, dir)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -232,7 +252,7 @@ class ToolsGeneProcessView(GenericAPIView):
         ser_data = JobRpobSerializer(data={
             "job_id": dir,
             "fasta_path": path,
-            "tags": "bacterial_genome ",
+            "tags": "bacterial_genome",
             "filetype": "genome",
             "seq": ""
         })
@@ -255,7 +275,8 @@ class GenerprocessResultView(GenericAPIView):
 
     def get(self, request):
         gener_dir = request.query_params.get("job_id")
-        out_path = os.path.join(random_path_genome, gener_dir, 'out')
+        out_path = os.path.join(random_path_genome, f"{gener_dir.split('-')[0]}", f"{gener_dir.split('-')[1]}",
+                                gener_dir, 'out')
         pa_path = os.path.join(out_path, os.listdir(out_path)[0])
         all = []
         taxonomy_df = pd.read_csv(os.path.join(pa_path, "Taxonomy.txt"), sep="\t").columns
@@ -290,6 +311,9 @@ class ItoolsItsView(GenericAPIView):
         seq = request.data.get("seq")
 
         dir_path, dir = RandomNumber().generate_path(random_path_its)
+        year = str(datetime.datetime.now().year)
+        month = str(datetime.datetime.now().month)
+        dir_path = os.path.join(random_path_its, year, month, dir)
         makedir(dir_path)
         makedir(os.path.join(dir_path, "out"))
         makedir(os.path.join(dir_path, "temp"))
@@ -322,6 +346,7 @@ class ItoolsItsView(GenericAPIView):
             "dbtype": 'ITS',
             "seq": ""
         })
+
         if ser_data.is_valid():
             ser_data.save()
             return Response(ser_data.data, status=status.HTTP_200_OK)

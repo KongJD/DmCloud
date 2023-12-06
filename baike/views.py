@@ -1,7 +1,7 @@
 import re
 from collections import OrderedDict, Counter
 import numpy as np
-
+import pandas as pd
 from django.db.models import Q
 from django.http import HttpRequest, QueryDict
 from django_elasticsearch_dsl_drf.constants import LOOKUP_FILTER_TERMS, LOOKUP_FILTER_PREFIX, LOOKUP_FILTER_WILDCARD, \
@@ -373,7 +373,13 @@ class PerSpeciesView(GenericAPIView):
         res = self.get_queryset().filter(
             Q(species=param2)).distinct().first()
         ser_res = self.get_serializer(res)
-        return Response(ser_res.data, status=status.HTTP_200_OK)
+        df = pd.read_csv("/public/Users/siteusr/website/DmCloud/data/synonyms.xls",
+                         sep="\t", header=None)
+        samename_df = df[[0, 1]].set_index(0).to_dict(orient='dict')[1]
+        if samename_df[param2]:
+            return Response({**ser_res.data, "same_name": samename_df[param2]}, status=status.HTTP_200_OK)
+        else:
+            return Response({**ser_res.data, "same_name": ""}, status=status.HTTP_200_OK)
 
 
 class ElasticSpeciesMorpholgyView(DocumentViewSet):

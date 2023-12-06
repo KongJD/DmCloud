@@ -34,8 +34,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         data['username'] = self.user.username
-        data['user_id'] = self.user.id
-        return data
+        # data['user_id'] = self.user.id
+        all = {"code": 200, "data": data,
+               "message": "success", "user_id": self.user.id}
+        return all
 
 
 class NoTificationsSerializer(serializers.ModelSerializer):
