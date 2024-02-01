@@ -110,9 +110,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'DMCloudDb',
-        'USER': 'siteusra',
-        'PASSWORD': 'dm20210120',
-        'HOST': '192.168.100.10',
+        'USER': 'test',
+        'PASSWORD': 'test',
+        'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4'},
@@ -120,9 +120,9 @@ DATABASES = {
     'db1': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'testDb',
-        'USER': 'siteusra',
-        'PASSWORD': 'dm20210120',
-        'HOST': '192.168.100.10',
+        'USER': 'test',
+        'PASSWORD': 'test',
+        'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4'},
